@@ -28,5 +28,5 @@ jobs:
         sed -i "s/version: .*/version: ${{ inputs.newtag }}/" helm/Chart.yaml
         git add helm/Chart.yaml
         git commit -m "chore(helm): Update Helm chart version to ${{ inputs.newtag }}"
-        git push origin master
+        git push --force origin master
   
