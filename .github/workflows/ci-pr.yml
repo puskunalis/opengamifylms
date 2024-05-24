@@ -1,0 +1,59 @@
+name: CI PR
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  manifest-scan:
+    uses: ./.github/workflows/manifest-scan.yml
+
+  docker-build-scan-opengamifylms:
+    needs: [test, lint]
+    uses: ./.github/workflows/docker-build-scan-push.yml
+    with:
+      context: ./backend
+      dockerfile: ./backend/Dockerfile
+      buildargs: ""
+      image: ghcr.io/puskunalis/opengamifylms
+      tag: pr-${{ github.event.number }}
+      scan: true
+      push: true
+
+  docker-build-scan-opengamifylms-frontend:
+    uses: ./.github/workflows/docker-build-scan-push.yml
+    with:
+      context: ./frontend
+      dockerfile: ./frontend/Dockerfile
+      buildargs: |
+        REACT_APP_BACKEND_HOSTNAME=opengamifylms
+        REACT_APP_BACKEND_PORT=3000
+      image: ghcr.io/puskunalis/opengamifylms-frontend
+      tag: pr-${{ github.event.number }}
+      scan: true
+      push: true
+
+  docker-build-cypress:
+    uses: ./.github/workflows/docker-build-scan-push.yml
+    with:
+      context: ./e2e
+      dockerfile: ./e2e/Dockerfile
+      buildargs: ""
+      image: ghcr.io/puskunalis/opengamifylms-cypress
+      tag: pr-${{ github.event.number }}
+      scan: false
+      push: true
+  
+  test-e2e:
+    needs: [docker-build-cypress, docker-build-scan-opengamifylms, docker-build-scan-opengamifylms-frontend]
+    uses: ./.github/workflows/test-e2e.yml
+    with:
+      opengamifylms_image: ghcr.io/puskunalis/opengamifylms:pr-${{ github.event.number }}
+      opengamifylms_frontend_image: ghcr.io/puskunalis/opengamifylms-frontend:pr-${{ github.event.number }}
+      cypress_image: ghcr.io/puskunalis/opengamifylms-cypress:pr-${{ github.event.number }}

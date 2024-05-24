@@ -1,0 +1,34 @@
+name: Calculate git tag
+
+on:
+  workflow_call:
+    outputs:
+      newtag:
+        description: "New git tag"
+        value: ${{ jobs.calculate-git-tag.outputs.newtag }}
+
+jobs:
+  calculate-git-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      newtag: ${{ steps.semver.outputs.newtag }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get latest tag
+      id: latesttag
+      run: echo "tag=$(git describe --tags --abbrev=0 || echo '0.0.0')" >> $GITHUB_OUTPUT
+
+    - name: Calculate next patch version
+      id: semver
+      run: |
+        LATEST_TAG=${{ steps.latesttag.outputs.tag }}
+        IFS='.' read -ra VERSION_PARTS <<< "$LATEST_TAG"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]}
+        NEW_PATCH=$((PATCH + 1))
+        NEW_TAG="$MAJOR.$MINOR.$NEW_PATCH"
+        echo "newtag=$NEW_TAG" >> $GITHUB_OUTPUT

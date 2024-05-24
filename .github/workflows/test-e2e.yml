@@ -1,0 +1,49 @@
+name: Test e2e
+
+on:
+  workflow_call:
+    inputs:
+      opengamifylms_image:
+        required: true
+        type: string
+      opengamifylms_frontend_image:
+        required: true
+        type: string
+      cypress_image:
+        required: true
+        type: string
+
+jobs:
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test
+      run: |
+        docker compose -f e2e/docker-compose-ci.yml -p opengamifylms_cypress up --abort-on-container-exit --exit-code-from cypress-e2e-tests
+      env:
+        OPENGAMIFYLMS_IMAGE: ${{ inputs.opengamifylms_image }}
+        OPENGAMIFYLMS_FRONTEND_IMAGE: ${{ inputs.opengamifylms_frontend_image }}
+        CYPRESS_IMAGE: ${{ inputs.cypress_image }}
+
+    - name: Upload Screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cypress-screenshots
+        path: e2e/screenshots
+
+    - name: Upload Videos
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cypress-videos
+        path: e2e/videos

@@ -1,0 +1,44 @@
+name: CI Master
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  calculate-git-tag:
+    uses: ./.github/workflows/calculate-git-tag.yml
+
+  docker-build-push-opengamifylms:
+    needs: [test, calculate-git-tag]
+    uses: ./.github/workflows/docker-build-scan-push.yml
+    with:
+      context: ./backend
+      dockerfile: ./backend/Dockerfile
+      buildargs: ""
+      image: ghcr.io/puskunalis/opengamifylms
+      tag: ${{ needs.calculate-git-tag.outputs.newtag }}
+      scan: false
+      push: true
+
+  docker-build-push-opengamifylms-react:
+    needs: [calculate-git-tag]
+    uses: ./.github/workflows/docker-build-scan-push.yml
+    with:
+      context: ./frontend
+      dockerfile: ./frontend/Dockerfile
+      buildargs: |
+        REACT_APP_BACKEND_HOSTNAME=opengamifylms
+        REACT_APP_BACKEND_PORT=3000
+      image: ghcr.io/puskunalis/opengamifylms-frontend
+      tag: ${{ needs.calculate-git-tag.outputs.newtag }}
+      scan: false
+      push: true
+
+  after-merge:
+    needs: [docker-build-push-opengamifylms, calculate-git-tag]
+    uses: ./.github/workflows/after-merge.yml
+    with:
+      newtag: ${{ needs.calculate-git-tag.outputs.newtag }}

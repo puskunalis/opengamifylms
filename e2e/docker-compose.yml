@@ -1,0 +1,66 @@
+version: '3'
+services:
+
+  cypress-e2e-tests:
+    build:
+      context: .
+    depends_on:
+      - opengamifylms
+      - opengamifylms-frontend
+      - postgres
+      - minio
+    volumes:
+      - .:/cypress/cypress
+
+  opengamifylms:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - minio
+    restart: always
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      READINESS_PORT: "8080"
+      DB_CONN_STR: "postgres://ps_user:SecurePassword@postgres:5432/ps_db?sslmode=disable"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY_ID: "user"
+      MINIO_SECRET_ACCESS_KEY: "password"
+      JWT_SECRET_KEY: "temp_jwt_secret_key"
+      CUSTOM_SYSTEM_TITLE: "OpenGamifyLMS-e2e-tests"
+      CUSTOM_SYSTEM_PRIMARY_COLOR: "#1976d2"
+      CUSTOM_SYSTEM_SECONDARY_COLOR: "#9c27b0"
+
+  opengamifylms-frontend:
+    ports:
+      - 80:80
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: always
+
+  postgres:
+    image: postgres:16.3-alpine3.19
+    restart: always
+    environment:
+      POSTGRES_DB: ps_db
+      POSTGRES_USER: ps_user
+      POSTGRES_PASSWORD: SecurePassword
+    volumes:
+      - ../backend/store/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ../backend/sample_data.sql:/docker-entrypoint-initdb.d/setup.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ps_user -d ps_db"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    restart: always
+    environment:
+      MINIO_ROOT_USER: user
+      MINIO_ROOT_PASSWORD: password
+    command: "server /data --console-address \":9001\""

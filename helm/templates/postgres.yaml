@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Chart.Name }}-postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}-postgres
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16.3-alpine3.19
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+            limits:
+              memory: 1Gi
+          envFrom:
+            - configMapRef:
+                name: {{ .Chart.Name }}-postgres-secret
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: postgresdata
+              mountPath: /var/lib/postgresql/data
+            - name: sql-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: postgresdata
+          persistentVolumeClaim:
+            claimName: {{ .Chart.Name }}-postgres-volume-claim
+        - name: sql-scripts
+          configMap:
+            name: {{ .Chart.Name }}-postgres-init-scripts
+            defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .Chart.Name }}-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      name: postgres
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-postgres-secret
+  labels:
+    app: {{ .Chart.Name }}-postgres
+data:
+  POSTGRES_DB: ps_db
+  POSTGRES_USER: ps_user
+  POSTGRES_PASSWORD: SecurePassword
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Chart.Name }}-postgres-volume
+  labels:
+    type: local
+    app: {{ .Chart.Name }}-postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /data/{{ .Chart.Name }}-postgresql
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Chart.Name }}-postgres-volume-claim
+  labels:
+    app: {{ .Chart.Name }}-postgres
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi

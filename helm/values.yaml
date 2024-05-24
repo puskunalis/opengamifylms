@@ -1,0 +1,14 @@
+opengamifylmsImage: ghcr.io/puskunalis/opengamifylms
+host: "0.0.0.0"
+port: "3000"
+readinessPort: "8080"
+dbConnStr: "postgresql://ps_user:SecurePassword@postgres:5432/ps_db?sslmode=disable"
+minio:
+  endpoint: "minio:9000"
+  rootUser: user
+  rootPassword: password
+jwtSecretKey: "change_me"
+customSystemSettings:
+  title: "OpenGamifyLMS"
+  primaryColor: "#1976d2"
+  secondaryColor: "#9c27b0"

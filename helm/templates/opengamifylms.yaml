@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.opengamifylmsImage }}:{{ .Chart.Version }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ .Chart.Name }}
+          ports:
+            - containerPort: {{ .Values.port }}
+              name: http
+            - containerPort: {{ .Values.readinessPort }}
+              name: ready
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: ready
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: {{ .Chart.Name }}
+              mountPath: /{{ .Chart.Name }}
+      volumes:
+        - name: {{ .Chart.Name }}
+          configMap:
+            name: {{ .Chart.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .Chart.Name }}
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      name: http
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: ready
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}
+data:
+  HOST: "{{ .Values.host }}"
+  PORT: "{{ .Values.port }}"
+  READINESS_PORT: "{{ .Values.readinessPort }}"
+  DB_CONN_STR: "{{ .Values.dbConnStr }}"
+  MINIO_ENDPOINT: "{{ .Values.minio.endpoint }}"
+  MINIO_ACCESS_KEY_ID: "{{ .Values.minio.rootUser }}"
+  MINIO_SECRET_ACCESS_KEY: "{{ .Values.minio.rootPassword }}"
+  JWT_SECRET_KEY: "{{ .Values.jwtSecretKey }}"
+  CUSTOM_SYSTEM_TITLE: "{{ .Values.customSystemSettings.title }}"
+  CUSTOM_SYSTEM_PRIMARY_COLOR: "{{ .Values.customSystemSettings.primaryColor }}"
+  CUSTOM_SYSTEM_SECONDARY_COLOR: "{{ .Values.customSystemSettings.secondaryColor }}"

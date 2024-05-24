@@ -1,0 +1,32 @@
+name: After merge
+
+on:
+  workflow_call:
+    inputs:
+      newtag:
+        required: true
+        type: string
+
+jobs:
+  after-merge:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up git
+      run: |
+        git config --local user.email "release.robot@example.com"
+        git config --local user.name "Release Robot"
+
+    - name: Push git tag
+      run: |
+        git tag ${{ inputs.newtag }}
+        git push origin ${{ inputs.newtag }}
+
+    - name: Update Helm version
+      run: |
+        sed -i "s/version: .*/version: ${{ inputs.newtag }}/" helm/Chart.yaml
+        git add helm/Chart.yaml
+        git commit -m "chore(helm): Update Helm chart version to ${{ inputs.newtag }}"
+        git push origin master
+  

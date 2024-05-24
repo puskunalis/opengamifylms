@@ -1,0 +1,76 @@
+.rich-text-editor * {
+    margin: 0px;
+    box-sizing: border-box;
+}
+
+.rich-text-editor body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem auto;
+    background: #ddd;
+}
+
+.rich-text-editor .editor-wrapper {
+    width: 768px;
+    border: 1px solid black;
+    background: #fff;
+    padding: 1rem;
+}
+
+.rich-text-editor .editor-container {
+    width: 100%;
+    border: 1px solid green;
+    padding: 1rem;
+}
+
+.rich-text-editor .toolbar-grid {
+    display: flex;
+    flex-wrap: wrap;
+    flex-basis: 1fr 1fr;
+}
+
+.rich-text-editor button {
+    margin-right: 8px;
+    font-size: 1rem;
+    padding: 10px;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+}
+
+.superFancyBlockquote {
+    color: #999;
+    background: #fff;
+    font-family: "Hoefler Text", Georgia, serif;
+    font-style: italic;
+    border-left: 2px solid #999;
+    padding-left: 10px;
+}
+
+.codeBlock {
+    font-family: fira-code, monospace;
+    font-size: inherit;
+    background: #ffeff0;
+    font-style: italic;
+    word-wrap: break-word;
+    box-decoration-break: slice;
+    padding: 0.3rem 2rem;
+    border-radius: 0.2rem;
+}
+
+.leftAlign {
+    text-align: left;
+}
+
+.rightAlign {
+    text-align: right;
+}
+
+.centerAlign {
+    text-align: center;
+}
+
+.justifyAlign {
+    text-align: justify;
+}
